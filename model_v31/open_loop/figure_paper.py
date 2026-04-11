@@ -20,6 +20,8 @@ eps = np.finfo(np.float32).eps.item()
 
 np.random.seed(0)
 
+
+
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['DejaVu Serif']
 plt.rcParams['pdf.fonttype'] = 42
@@ -79,38 +81,37 @@ model_copasi = load_model(folder_path + "/" + model_name + '.cps')
 
 
 def ode_system(t, y, b, k_in, k_f, k_1, k_2, k_3, n, c, p_1, p_2):
-
     (Y, X, Z_1, Z_2,
      V_Y,  V_YX,  V_YZ1, V_YZ2,
      V_X,  V_XZ1, V_XZ2,
      V_Z1, V_Z1Z2, V_Z2) = y
 
 
-    dY   = k_f * X - p_2 * Y + c * p_1
+    dY = c * p_1 - p_2 * Y - k_f * Y * X
 
 
-    dX   = b + k_in * Y       - k_1 * X * Z_1
+    dX = b + k_in * Y - k_1 * X * Z_1
 
 
-    dZ_1 = k_2 * X            - n   * Z_1 * Z_2
+    dZ_1 = k_2 * X - n * Z_1 * Z_2
 
 
-    dZ_2 = k_3                - n   * Z_1 * Z_2
+    dZ_2 = k_3 - n * Z_1 * Z_2
 
 
     dV_Y = (
         p_1 * c**2
-        + k_f * X
         + p_2 * Y
-        + 2 * k_f * V_YX
-        - 2 * p_2 * V_Y
+        - 2 * V_Y * (p_2 + k_f * X)
+        + k_f * Y * X
+        - 2 * k_f * Y * V_YX
     )
 
 
     dV_YX = (
-        k_f * V_X
-        + k_in * V_Y
-        - p_2 * V_YX
+        k_in * V_Y
+        - V_YX * (p_2 + k_f * X)
+        - k_f * Y * V_X
         - k_1 * X * V_YZ1
         - k_1 * Z_1 * V_YX
     )
@@ -118,16 +119,16 @@ def ode_system(t, y, b, k_in, k_f, k_1, k_2, k_3, n, c, p_1, p_2):
 
     dV_YZ1 = (
         k_2 * V_YX
-        + k_f * V_XZ1
-        - p_2 * V_YZ1
+        - V_YZ1 * (p_2 + k_f * X)
+        - k_f * Y * V_XZ1
         - n * Z_1 * V_YZ2
         - n * Z_2 * V_YZ1
     )
 
 
     dV_YZ2 = (
-        k_f * V_XZ2
-        - p_2 * V_YZ2
+        - V_YZ2 * (p_2 + k_f * X)
+        - k_f * Y * V_XZ2
         - n * Z_1 * V_YZ2
         - n * Z_2 * V_YZ1
     )
@@ -138,7 +139,7 @@ def ode_system(t, y, b, k_in, k_f, k_1, k_2, k_3, n, c, p_1, p_2):
         + k_in * Y
         + 2 * k_in * V_YX
         + k_1 * X * Z_1
-        - 2 * k_1 * X  * V_XZ1
+        - 2 * k_1 * X * V_XZ1
         - 2 * k_1 * Z_1 * V_X
     )
 
@@ -160,7 +161,6 @@ def ode_system(t, y, b, k_in, k_f, k_1, k_2, k_3, n, c, p_1, p_2):
         - n * Z_1 * V_XZ2
         - n * Z_2 * V_XZ1
     )
-
 
     dV_Z1 = (
         k_2 * X
@@ -188,15 +188,12 @@ def ode_system(t, y, b, k_in, k_f, k_1, k_2, k_3, n, c, p_1, p_2):
         - 2 * n * Z_2 * V_Z1Z2
     )
 
-
-
     return [
         dY, dX, dZ_1, dZ_2,
         dV_Y, dV_YX, dV_YZ1, dV_YZ2,
         dV_X, dV_XZ1, dV_XZ2,
         dV_Z1, dV_Z1Z2, dV_Z2
     ]
-
 
 def solve_and_save(y0, params, t_final, csv_filename):
     t_span = (0, t_final)
@@ -246,16 +243,16 @@ params = {
     'p_2': 1,
 
 
-    'b': 250,
-    'k_2': 1,
-    'k_1': 16,
-    'k_3': 20,
-    'n': 1000,
+    'b': 0,
+    'k_2': 0,
+    'k_1': 0,
+    'k_3': 0,
+    'n': 0,
 
     'c': 1,
 
-    'k_in': 32,
-    'k_f': 0.5
+    'k_in': 0,
+    'k_f': 0
 }
 
 
@@ -330,8 +327,8 @@ ax1 = plt.gca()
 t_plot  = np.array(t_index_controller)
 y_plot  = np.array(mean_controller)
 mask = t_plot >= t_final_
-t_mean_controller = t_plot[mask]-t_final_
 mean_controller_ = y_plot[mask]
+t_mean_controller = t_plot[mask]-t_final_
 
 line1, = ax1.plot(t_mean_controller, mean_controller_, linestyle="solid", color='green', label = "$Y_t\mathrm{, \, SSA}$", alpha = 0.7)
 
@@ -370,34 +367,8 @@ data_lna_ = data_lna.dropna()
 plt.plot(data_lna_["t"], data_lna_["y_fano_lna"], linestyle="dashed", color='black', label = "$Y_t\mathrm{, \, LNA}$", alpha = 0.6)
 
 
-b   = params["b"]
-k_1 = params["k_1"]
-k_2 = params["k_2"]
-k_3 = params["k_3"]
-k_in = params["k_in"]
-k_f  = params["k_f"]
-
-lambda_1 = (
-    k_3 * k_f * (
-        k_3 * (k_1 * k_3**2 + b * k_2 * (k_2 + k_1 * k_3)) * k_f
-        + (k_2 + k_3 * k_f) * (b * k_2**2 + k_3 * (k_2 + k_1 * k_3) * k_f) * k_in
-        + k_2 * (k_2 + k_3 * k_f)**2 * k_in**2
-    )
-)
-
-lambda_2 = (
-    k_2 * (k_2 + k_3 * k_f) * (
-        b * k_2 * (b * k_2 + k_3 + k_1 * k_3**2)
-        + b * k_2 * (2 * k_2 + k_3 * k_f) * k_in
-        + k_3 * (k_2 + k_1 * k_2 * k_3 + k_1 * k_3**2 * k_f) * k_in
-        + k_2 * (k_2 + k_3 * k_f) * k_in**2
-    )
-)
-
-FF_Y_t_star = 1 + (lambda_1 / lambda_2)
-
-plt.hlines(FF_Y_t_star, min(data_lna_["t"]), max(data_lna_["t"]), color="#D55E00", alpha = 0.8, linestyle="dashdot", label = "$FF_{Y_t}^*$")
-
+FF_u = (1 + params["c"])/2
+plt.hlines(FF_u, min(data_lna_["t"]), max(data_lna_["t"]), color="#D55E00", alpha = 0.8, linestyle="dashdot", label = "$FF_U^*$")
 
 
 plt.ylabel('Fano factor')
@@ -405,6 +376,12 @@ plt.xlabel('Time')
 
 plt.grid(True)
 plt.legend(loc='best')
+
+max_y_value = max(max(fano_controller_), max(data_lna_["y_fano_lna"]))
+min_y_value = min(min(fano_controller_), min(data_lna_["y_fano_lna"]))
+y_lower = min_y_value - abs(min_y_value) * 0.30
+y_upper = max_y_value + abs(max_y_value) * 0.30
+plt.ylim(y_lower, y_upper)
 
 plt.tight_layout()
 
@@ -414,7 +391,7 @@ plt.close()
 
 
 import pickle
-with open(folder_path_exp + f'/fano_gillespie_y_cl.pkl', 'wb') as f:
+with open(folder_path_exp + f'/fano_gillespie_y_olo.pkl', 'wb') as f:
     pickle.dump({
         "t": t_index_controller_,
         "fano_y": fano_controller_,
@@ -423,7 +400,7 @@ with open(folder_path_exp + f'/fano_gillespie_y_cl.pkl', 'wb') as f:
     }, f)
 
 
-with open(folder_path_exp + f'/fano_lna_y_cl.pkl', 'wb') as f:
+with open(folder_path_exp + f'/fano_lna_y_olo.pkl', 'wb') as f:
     pickle.dump({
         "t": list(data_lna_["t"]),
         "fano_y": list(data_lna_["y_fano_lna"]),

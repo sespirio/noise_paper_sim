@@ -65,7 +65,8 @@ model v21, closed-loop
 
 
 
-[Figure 14; Figure S14]                                         
+[Figure 14; Figure S14]      
+model v31, open-loop                                    
 model v31, closed-loop 
 model v32, closed-loop 
 

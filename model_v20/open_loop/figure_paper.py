@@ -330,9 +330,9 @@ mask = t_plot >= t_final_
 mean_controller_ = y_plot[mask]
 t_mean_controller = t_plot[mask]-t_final_
 
-line1, = ax1.plot(t_mean_controller, mean_controller_, linestyle="solid", color='green', label = "$X\mathrm{, \, SSA, \, OL}$", alpha = 0.7)
+line1, = ax1.plot(t_mean_controller, mean_controller_, linestyle="solid", color='green', label = "$Y_t\mathrm{, \, SSA}$", alpha = 0.7)
 
-line2, = ax1.plot(data_lna["t"], data_lna["Y_part"], linestyle="dashed", color='black', label = "$X\mathrm{, \, LNA, \, OL}$", alpha = 0.6)
+line2, = ax1.plot(data_lna["t"], data_lna["Y_part"], linestyle="dashed", color='black', label = "$Y_t\mathrm{, \, LNA}$", alpha = 0.6)
 
 ax1.set_ylabel('Number of molecules')
 
@@ -360,11 +360,11 @@ t_index_controller_ = [float(t)-t_final_ for t, f in zip(t_plot[mask], y_plot[ma
 fano_controller_ = [float(f) for f in y_plot[mask] if f if f != "NA"]
 
 
-plt.plot(t_index_controller_, fano_controller_, linestyle="solid", color='green', label = "$X\mathrm{, \, SSA, \, OL}$", alpha = 0.7)
+plt.plot(t_index_controller_, fano_controller_, linestyle="solid", color='green', label = "$Y_t\mathrm{, \, SSA}$", alpha = 0.7)
 
 
 data_lna_ = data_lna.dropna()
-plt.plot(data_lna_["t"], data_lna_["y_fano_lna"], linestyle="dashed", color='black', label = "$X\mathrm{, \, LNA, \, OL}$", alpha = 0.6)
+plt.plot(data_lna_["t"], data_lna_["y_fano_lna"], linestyle="dashed", color='black', label = "$Y_t\mathrm{, \, LNA}$", alpha = 0.6)
 
 
 FF_u = (1 + params["c"])/2

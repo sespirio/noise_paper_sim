@@ -20,9 +20,10 @@ eps = np.finfo(np.float32).eps.item()
 
 np.random.seed(0)
 
+
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = ['DejaVu Serif']
-plt.rcParams['pdf.fonttype'] = 42
+plt.rcParams['pdf.fonttype'] = 42  
 plt.rcParams['ps.useafm'] = False
 plt.rcParams['pdf.use14corefonts'] = False
 
@@ -53,7 +54,7 @@ matplotlib.use('TkAgg')
 
 
 current_dir = os.getcwd()
-folder_name = "tailored_figs_paper"
+folder_name = "stochastic_simulation_paper"
 folder_path_exp = os.path.join(current_dir, folder_name)
 if not os.path.exists(folder_path_exp):
     os.makedirs(folder_path_exp)
@@ -207,7 +208,7 @@ def solve_and_save(y0, params, t_final, csv_filename):
         y0=y0,
 
         args=(params['b'], params['k_in'], params['k_f'], params['k_1'], params['k_2'], params['k_3'], params['n'],
-              params['c'],
+              params['c'], 
               params['p_1'], params['p_2']),
         t_eval=t_eval,
         method = 'LSODA'
@@ -242,29 +243,28 @@ y0 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
 params = {
-    'p_1': 1,
-    'p_2': 1,
+    'p_1': 1,  
+    'p_2': 1,  
 
 
-    'b': 250,
-    'k_2': 1,
-    'k_1': 16,
-    'k_3': 20,
-    'n': 1000,
+    'b': 0, 
+    'k_2': 0,  
+    'k_1': 0,  
+    'k_3': 0, 
+    'n': 0, 
 
-    'c': 1,
+    'c': 1, 
 
-    'k_in': 32,
-    'k_f': 0.5
+    'k_in': 0,
+    'k_f': 0 
 }
 
 
 t_final = 15
 
-t_final_ = 0
+t_final_ = 0 
 
 data_lna = solve_and_save(y0, params, t_final, csv_filename='lna_solution.csv')
-
 
 data_lna["y_fano_lna"] = data_lna["V_Y"]/ data_lna["Y"]
 
@@ -297,7 +297,6 @@ for filename in os.listdir(folder_path):
                     dict_of_states_controller[key_a][key_b] = []
                 dict_of_states_controller[key_a][key_b].extend(loaded_dict[key_a][key_b])
 
-
 species_names = ["y"]
 for i, key_a in enumerate(species_names):
     mean_controller = []
@@ -324,25 +323,25 @@ for i, key_a in enumerate(species_names):
 
 plt.figure(figsize=(cm2inch(12), cm2inch(8)))
 
-ax1 = plt.gca()
+ax1 = plt.gca()  
 
 
 t_plot  = np.array(t_index_controller)
 y_plot  = np.array(mean_controller)
 mask = t_plot >= t_final_
-t_mean_controller = t_plot[mask]-t_final_
 mean_controller_ = y_plot[mask]
+t_mean_controller = t_plot[mask]-t_final_
 
-line1, = ax1.plot(t_mean_controller, mean_controller_, linestyle="solid", color='green', label = "$Y_t\mathrm{, \, SSA}$", alpha = 0.7)
+line1, = ax1.plot(t_mean_controller, mean_controller_, linestyle="solid", color="red", label = "Gill. [part.], y", alpha = 0.6)
 
-line2, = ax1.plot(data_lna["t"], data_lna["Y_part"], linestyle="dashed", color='black', label = "$Y_t\mathrm{, \, LNA}$", alpha = 0.6)
+line2, = ax1.plot(data_lna["t"], data_lna["Y_part"], linestyle="solid", color="black", label = "LNA [part.], y", alpha = 0.6)
 
-ax1.set_ylabel('Number of molecules')
+ax1.set_ylabel('Mean')
 
 plt.xlabel('Time')
 
 plt.grid(True)
-ax1.legend(handles=[line1, line2], loc = 'best')
+ax1.legend(handles=[line1, line2])
 
 plt.tight_layout()
 
@@ -363,48 +362,17 @@ t_index_controller_ = [float(t)-t_final_ for t, f in zip(t_plot[mask], y_plot[ma
 fano_controller_ = [float(f) for f in y_plot[mask] if f if f != "NA"]
 
 
-plt.plot(t_index_controller_, fano_controller_, linestyle="solid", color='green', label = "$Y_t\mathrm{, \, SSA}$", alpha = 0.7)
+plt.plot(t_index_controller_, fano_controller_, linestyle="solid", color="red", label = "Gill. [part.]", alpha = 0.6)
 
 
-data_lna_ = data_lna.dropna()
-plt.plot(data_lna_["t"], data_lna_["y_fano_lna"], linestyle="dashed", color='black', label = "$Y_t\mathrm{, \, LNA}$", alpha = 0.6)
-
-
-b   = params["b"]
-k_1 = params["k_1"]
-k_2 = params["k_2"]
-k_3 = params["k_3"]
-k_in = params["k_in"]
-k_f  = params["k_f"]
-
-lambda_1 = (
-    k_3 * k_f * (
-        k_3 * (k_1 * k_3**2 + b * k_2 * (k_2 + k_1 * k_3)) * k_f
-        + (k_2 + k_3 * k_f) * (b * k_2**2 + k_3 * (k_2 + k_1 * k_3) * k_f) * k_in
-        + k_2 * (k_2 + k_3 * k_f)**2 * k_in**2
-    )
-)
-
-lambda_2 = (
-    k_2 * (k_2 + k_3 * k_f) * (
-        b * k_2 * (b * k_2 + k_3 + k_1 * k_3**2)
-        + b * k_2 * (2 * k_2 + k_3 * k_f) * k_in
-        + k_3 * (k_2 + k_1 * k_2 * k_3 + k_1 * k_3**2 * k_f) * k_in
-        + k_2 * (k_2 + k_3 * k_f) * k_in**2
-    )
-)
-
-FF_Y_t_star = 1 + (lambda_1 / lambda_2)
-
-plt.hlines(FF_Y_t_star, min(data_lna_["t"]), max(data_lna_["t"]), color="#D55E00", alpha = 0.8, linestyle="dashdot", label = "$FF_{Y_t}^*$")
-
-
+data_lna_ = data_lna.dropna() 
+plt.plot(data_lna_["t"], data_lna_["y_fano_lna"], linestyle="solid", color="black", label = "LNA [conc.]", alpha = 0.6)
 
 plt.ylabel('Fano factor')
 plt.xlabel('Time')
 
 plt.grid(True)
-plt.legend(loc='best')
+plt.legend(loc='lower right')
 
 plt.tight_layout()
 
@@ -414,7 +382,7 @@ plt.close()
 
 
 import pickle
-with open(folder_path_exp + f'/fano_gillespie_y_cl.pkl', 'wb') as f:
+with open(folder_path_exp + f'/fano_gillespie_y_olo.pkl', 'wb') as f:
     pickle.dump({
         "t": t_index_controller_,
         "fano_y": fano_controller_,
@@ -423,7 +391,7 @@ with open(folder_path_exp + f'/fano_gillespie_y_cl.pkl', 'wb') as f:
     }, f)
 
 
-with open(folder_path_exp + f'/fano_lna_y_cl.pkl', 'wb') as f:
+with open(folder_path_exp + f'/fano_lna_y_olo.pkl', 'wb') as f:
     pickle.dump({
         "t": list(data_lna_["t"]),
         "fano_y": list(data_lna_["y_fano_lna"]),
@@ -432,52 +400,3 @@ with open(folder_path_exp + f'/fano_lna_y_cl.pkl', 'wb') as f:
     }, f)
 
 
-import random
-n_plots = 10
-n_trajectories = 3
-length = len(dict_of_states_controller["y"][0])
-
-for plot_i in range(n_plots):
-    plt.figure(figsize=(cm2inch(12), cm2inch(8)))
-
-
-    sampled_trajectories = random.sample(range(length), n_trajectories)
-
-    max_y_temp = -float('inf')
-    min_y_temp = float('inf')
-
-    colors = ["green", "black", "#D55E00"]
-    for k, trajectory_i in enumerate(sampled_trajectories):
-
-        ind_trajectory = {key: values[trajectory_i] for key, values in dict_of_states_controller["y"].items()}
-
-        ind_trajectory_ = list(ind_trajectory.values())
-
-
-        t_plot = np.array(t_index_controller)
-        y_plot = np.array(ind_trajectory_)
-        mask = t_plot >= t_final_
-
-        plt.plot(t_plot[mask] - t_final_, y_plot[mask], color = colors[k], linestyle="solid", alpha=0.7)
-
-
-
-        if max(y_plot[mask])>max_y_temp:
-            max_y_temp = float(max(y_plot[mask]))
-        if min(y_plot[mask])<min_y_temp:
-            min_y_temp = float(min(y_plot[mask]))
-
-
-    plt.ylabel('Number of molecules')
-
-    plt.xlabel('Time')
-
-    plt.grid(True)
-
-
-    plt.tight_layout()
-
-    plt.savefig(folder_path_exp + "/" + f"x_{n_trajectories}_trajectory_paper_{plot_i}.svg", format="svg", dpi=1000)
-    plt.savefig(folder_path_exp + "/" + f"x_{n_trajectories}_trajectory_paper_{plot_i}.pdf", format="pdf", dpi=1000)
-
-    plt.close()
